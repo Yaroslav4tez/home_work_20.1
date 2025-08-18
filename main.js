@@ -1,116 +1,78 @@
-/*Доробити TODO лист, в якому буде можливість:
-
-1. Додати завдання
-2. Видалити завдання
-3. Відзначити як виконану
-4. Усі дані повинні зберегтися після перезавантаження сторінки.
+/*
+1. Переробити ToDo-list з використанням Jquery
+2. За допомогою Bootstrap створити модальне вікно до TODO list, яке по кліку на завдання буде показувати вікно з його текстом.
 */
 
-//form
-const form = document.querySelector('.js--form');
 
-//input area
-const userInputTask = document.querySelector('.js--form__input');
+//jquery wariant 
 
-//buttons const
-const buttonTask = document.querySelector('.form__btn');
+$(document).ready(function () {
+    const $form = $('.js--form');
+    const $input = $('.js--form__input');
+    const $ul = $('.js--todos-wrapper');
+    const $pTextTask = $('#textTask');
 
-//list area
-const ul = document.querySelector('.js--todos-wrapper');
-const li = document.querySelector('.todo-item');
+    const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
-//span
-const todoitemdescription = document.querySelectorAll('.todo-item__description');
-
-//last li area 
-const todoitemchecked = document.querySelector('.todo-item--checked');
-
-
-const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-
-function saveToLocalStorage() {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-}
-
- 
-function createTasks() {
-    ul.innerHTML = "";
-
-    tasks.forEach((task, index) => {
-        const newLi = document.createElement('li');
-        newLi.classList.add('todo-item');
-        if (task.done) {
-            newLi.classList.add('todo-item--checked');
-        }
-        
-        const newDoneInput = document.createElement('input');
-        newDoneInput.type = "checkbox";
-        newDoneInput.checked = task.done;
-        newDoneInput.addEventListener('change', () => {
-            tasks[index].done = newDoneInput.checked;
-            saveToLocalStorage();
-            createTasks();
-        });
-
-        const newSpan = document.createElement('span');
-        newSpan.classList.add('todo-item__description');
-        newSpan.textContent = task.text;
-
-        const newButton = document.createElement('button');
-        newButton.classList.add('todo-item__delete');
-        newButton.textContent = "Видалити";
-        newButton.addEventListener('click', () => {
-            tasks.splice(index, 1);
-            saveToLocalStorage();
-            createTasks();
-        });
-
-        newLi.appendChild(newDoneInput);
-        newLi.appendChild(newSpan);
-        newLi.appendChild(newButton);
-        ul.appendChild(newLi);
-        
-//for modal
-newSpan.addEventListener('click', () => {
-    modal.show();
-    pTextTask.textContent = newSpan.textContent;
-})
-    });
-}
-
-
-function reCreateTask(event) {
-    event.preventDefault();
-
-    const userTaskText = userInputTask.value.trim();
-    if (userTaskText === "") {
-        alert('нема задачі');
-        return;
+    function saveToLocalStorage() {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
     }
 
-    tasks.push({ text: userTaskText, done: false });
-    saveToLocalStorage();
-    createTasks();
+    function renderTasks() {
+        $ul.empty();
 
-    userInputTask.value = '';
-}
+        tasks.forEach((task, index) => {
+            const $li = $('<li>').addClass('todo-item');
+            if (task.done) $li.addClass('todo-item--checked');
 
-buttonTask.addEventListener('click', reCreateTask);
-document.addEventListener('DOMContentLoaded', createTasks);
+            const $checkbox = $('<input type="checkbox">').prop('checked', task.done);
+            $checkbox.on('change', function () {
+                tasks[index].done = this.checked;
+                saveToLocalStorage();
+                renderTasks();
+            });
 
-//for modal
-const modalElement = document.getElementById('myModal');
-const closeHeader = document.getElementById('closeModalHeader');
-const closeFooter = document.getElementById('closeModalFooter');
-const pTextTask = document.getElementById('textTask');
+            const $span = $('<span>')
+                .addClass('todo-item__description')
+                .text(task.text)
+                .on('click', function () {
+                    $pTextTask.text($(this).text());
+                    modal.show();
+                });
 
+            const $button = $('<button>')
+                .addClass('todo-item__delete btn btn-danger btn-sm ms-2')
+                .text('Видалити')
+                .on('click', function () {
+                    tasks.splice(index, 1);
+                    saveToLocalStorage();
+                    renderTasks();
+                });
 
-const modal = new bootstrap.Modal(modalElement);
+            $li.append($checkbox, $span, $button);
+            $ul.append($li);
+        });
+    }
 
-closeHeader.addEventListener('click', () => {
-    modal.hide();
-})
+    $form.on('submit', function (e) {
+        e.preventDefault();
+        const text = $input.val().trim();
+        if (!text) {
+            alert('нема задачі');
+            return;
+        }
+        tasks.push({ text, done: false });
+        saveToLocalStorage();
+        renderTasks();
+        $input.val('');
+    });
 
-closeFooter.addEventListener('click', () => {
-    modal.hide();
-})
+    const modalElement = document.getElementById('myModal');
+    const modal = new bootstrap.Modal(modalElement);
+
+    $('#closeModalHeader, #closeModalFooter').on('click', function () {
+        modal.hide();
+    });
+
+    renderTasks();
+});
